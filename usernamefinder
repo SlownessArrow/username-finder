@@ -33,7 +33,6 @@ CUSTOM_NAMES = """
 
 def get_names():
     names = []
-a
     seen = set()
 
     for line in CUSTOM_NAMES.splitlines():
