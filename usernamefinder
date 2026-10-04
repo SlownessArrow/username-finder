@@ -1,0 +1,217 @@
+import time
+from pathlib import Path
+
+import requests
+
+
+# =========================================================
+# CONFIG
+# =========================================================
+
+API = "https://api.chess.com/pub/player/{}"
+
+USER_AGENT = (
+    "Usernamefinder "
+
+)
+
+REQUEST_DELAY = 0.1
+
+OUTPUT_FILE = Path("available_names.txt")
+
+
+# =========================================================
+# PASTE YOUR NAMES HERE
+# ONE NAME PER LINE
+# =========================================================
+
+CUSTOM_NAMES = """
+
+"""
+
+
+
+def get_names():
+    names = []
+a
+    seen = set()
+
+    for line in CUSTOM_NAMES.splitlines():
+
+        name = line.strip().lower()
+
+        # Ignore empty lines
+        if not name:
+            continue
+
+        # Remove accidental spaces
+        name = name.strip()
+
+        # Chess.com username length
+        if len(name) < 3 or len(name) > 20:
+            print(f"[SKIP] Invalid length: {name}")
+            continue
+
+        # Don't check duplicates
+        if name in seen:
+            continue
+
+        seen.add(name)
+        names.append(name)
+
+    return names
+
+
+session = requests.Session()
+
+session.headers.update({
+    "User-Agent": USER_AGENT,
+    "Accept": "application/json",
+})
+
+
+def check_username(username):
+
+    url = API.format(username)
+
+    try:
+
+        response = session.get(
+            url,
+            timeout=15
+        )
+
+        # Existing player
+        if response.status_code == 200:
+            return "TAKEN"
+
+        # No player found
+        if response.status_code in (404, 410):
+            return "CANDIDATE"
+
+        # Rate limited
+        if response.status_code == 429:
+            return "RATE_LIMITED"
+
+        return f"ERROR_{response.status_code}"
+
+    except requests.RequestException as error:
+
+        print(
+            f"\n[ERROR] {username}: {error}"
+        )
+
+        return "ERROR"
+
+
+def save_name(username):
+
+    with OUTPUT_FILE.open(
+        "a",
+        encoding="utf-8"
+    ) as file:
+
+        file.write(username + "\n")
+
+
+def scan(names):
+
+    total = len(names)
+
+    checked = 0
+    candidates = 0
+
+    print()
+    print("=" * 60)
+    print("STARTING SCAN")
+    print("=" * 60)
+
+    print(f"Names to check: {total:,}")
+    print()
+
+    for username in names:
+
+        while True:
+
+            result = check_username(username)
+
+
+            if result == "CANDIDATE":
+
+                candidates += 1
+
+                print(
+                    f"\n[CANDIDATE] {username}"
+                )
+
+                save_name(username)
+
+                break
+
+
+            elif result == "TAKEN":
+
+                break
+
+            elif result == "RATE_LIMITED":
+
+                print(
+                    "\n[!] Rate limited."
+                )
+
+                print(
+                    "[!] Waiting 30 seconds..."
+                )
+
+                time.sleep(30)
+
+                continue
+
+
+            else:
+
+                print(
+                    f"\n[!] {username}: {result}"
+                )
+
+                break
+
+        checked += 1
+
+        print(
+            f"\rProgress: {checked:,}/{total:,} "
+            f"| Candidates: {candidates:,}",
+            end="",
+            flush=True
+        )
+
+        time.sleep(REQUEST_DELAY)
+
+    print()
+    print()
+
+    print("=" * 60)
+    print("SCAN COMPLETE")
+    print("=" * 60)
+
+    print(f"Checked: {checked:,}")
+    print(f"Candidates: {candidates:,}")
+    print(f"Saved to: {OUTPUT_FILE}")
+
+
+def main():
+
+    names = get_names()
+
+    print("=" * 60)
+    print("       CHESS.COM USERNAME HUNTER")
+    print("=" * 60)
+
+    print()
+    print(f"Loaded {len(names):,} unique names.")
+
+    scan(names)
+
+
+if __name__ == "__main__":
+    main()
