@@ -3,10 +3,7 @@ from pathlib import Path
 
 import requests
 
-
-# =========================================================
 # CONFIG
-# =========================================================
 
 API = "https://api.chess.com/pub/player/{}"
 
@@ -20,10 +17,10 @@ REQUEST_DELAY = 0.1
 OUTPUT_FILE = Path("available_names.txt")
 
 
-# =========================================================
+
 # PASTE YOUR NAMES HERE
 # ONE NAME PER LINE
-# =========================================================
+
 
 CUSTOM_NAMES = """
 
